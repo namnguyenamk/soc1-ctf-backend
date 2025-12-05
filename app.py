@@ -22,6 +22,29 @@ CORRECT_ANSWERS = {
 
 app = Flask(__name__)
 CORS(app)  # cho phép gọi từ GitHub Pages
+# Danh sách câu hỏi và đáp án (tạm thời viết thẳng trong code)
+questions = {
+    1: {
+        "question": "Q1: In the bots1_firewall_log index, find the event with action='ALLOW', rule.id=79 and port=19. What is the source.ip?",
+        "answer": "209.35.99.117"
+    },
+    2: {
+        "question": "Q2: .... (bạn sẽ điền câu hỏi thật sau này)",
+        "answer": "ANSWER_Q2"
+    },
+    3: {
+        "question": "Q3: ....",
+        "answer": "ANSWER_Q3"
+    },
+    4: {
+        "question": "Q4: ....",
+        "answer": "ANSWER_Q4"
+    },
+    5: {
+        "question": "Q5: ....",
+        "answer": "ANSWER_Q5"
+    }
+}
 
 @app.route("/submit-answer", methods=["POST"])
 def submit_answer():
