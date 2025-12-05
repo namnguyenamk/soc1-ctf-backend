@@ -78,6 +78,35 @@ def submit():
         return jsonify({
             "correct": False
         })
+@app.route("/finish", methods=["POST"])
+def finish():
+    data = request.get_json()
+    username = data.get("username")
+    score = data.get("score", 0)
+    finished_time = data.get("finished_time")
 
+    if not username:
+        return jsonify({"error": "Missing username"}), 400
+
+    doc = {
+        "username": username,
+        "score": score,
+        "finished_time": finished_time,
+        "player_ip": request.remote_addr
+    }
+
+    # Gửi vào elastic
+    if ELASTIC_API_KEY:
+        es_url = f"{ELASTIC_HOST}/{ELASTIC_INDEX}/_doc"
+        es_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"ApiKey {ELASTIC_API_KEY}"
+        }
+        try:
+            requests.post(es_url, json=doc, headers=es_headers, timeout=5)
+        except:
+            print("Error ES")
+
+    return jsonify({"status": "saved"})
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
