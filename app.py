@@ -128,6 +128,7 @@ def finish():
         "username": username,
         "score": score,
         "finished_time": finished_time,
+        "finished_time_str": finished_time
         "player_ip": request.remote_addr
     }
 
