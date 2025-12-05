@@ -20,19 +20,17 @@ questions = {
         "answer": "209.35.99.117"
     },
     2: {
-        "question": "Question2— Firewall Log Analysis
-In **bots1_firewall_log**, what is the:➡ **destination.ip** of the session **denied by the firewall (action = DENY)**?
-👉 Enter the answer in the form:**
-`192.168.xxx.xxx`",
+        "question": "Question2— Firewall Log Analysis.In 'bots1_firewall_log'.What is the:➡ **destination.ip** of the session **denied by the firewall (action = DENY)**?
+👉 Enter the answer in the form:`192.168.xxx.xxx`",
         "answer": "ANSWER_Q2"
     },
     3: {
-        "question": "Question 3 — Firewall Log Analysis: In **bots1_firewall_log**, determine:➡ Which **destination port (destination.port)** is blocked the most by the **firewall**?
+        "question": "Question 3 — Firewall Log Analysis: In 'bots1_firewall_log', determine:➡ Which **destination port** is blocked the most by the **firewall**?
 👉 Please provide the **destination.port** of this event.",
         "answer": "ANSWER_Q3"
     },
     4: {
-        "question": "**Question4:**In the `bots1_firewall_log`.Firewall Behavior  find:➡ Which **Source IP** was **rejected the most times** by the firewall?
+        "question": "Question4: In the `bots1_firewall_log`.Firewall Behavior, find:➡ Which **Source IP** was **rejected the most times** by the firewall?
 👉 Please provide the **source.ip** of this event",
         "answer": "ANSWER_Q4"
     },
