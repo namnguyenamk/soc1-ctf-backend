@@ -128,7 +128,7 @@ def finish():
         "username": username,
         "score": score,
         "finished_time": finished_time,
-        "finished_time_str": finished_time
+        "finished_time_str": finished_time,
         "player_ip": request.remote_addr
     }
 
@@ -158,7 +158,7 @@ def ranking():
             "size": 10,
             "sort": [
                 {"score": {"order": "desc"}},
-                {"finished_time.keyword": {"order": "asc"}}
+                {"finished_time_str": {"order": "asc"}}
             ],
             "query": {
                 "exists": {"field": "score"}
