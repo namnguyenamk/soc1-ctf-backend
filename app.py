@@ -4,7 +4,8 @@ import requests
 import os
 
 # ========= CONFIG CỦA BẠN =========
-ELASTIC_HOST = "https://e32edf2a2950431c87ca31d6ea3722ad.us-central1.gcp.cloud.es.io"
+# ELASTIC_HOST = "https://e32edf2a2950431c87ca31d6ea3722ad.us-central1.gcp.cloud.es.io"
+ELASTIC_HOST = "https://e32edf2a2950431c87ca31d6ea3722ad.us-central1.gcp.cloud.es.io:443"
 ELASTIC_INDEX = "botsv1_ctf_answers"
 ELASTIC_PIPELINE = "ctf_answer_checker"  # nếu bạn tạo ingest pipeline
 ELASTIC_API_KEY = os.environ.get("ELASTIC_API_KEY")
