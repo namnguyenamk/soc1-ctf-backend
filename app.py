@@ -84,6 +84,20 @@ def submit_answer():
 @app.route("/", methods=["GET"])
 def home():
     return "SOC1 CTF Backend Running!"
+@app.route("/question/<int:q_id>", methods=["GET"])
+def get_question(q_id):
+    """
+    Trả về nội dung câu hỏi theo id.
+    Nếu đã hết câu hỏi (id > 5) thì báo done = true
+    """
+    q = questions.get(q_id)
+    if not q:
+        return jsonify({"done": True})
 
+    return jsonify({
+        "id": q_id,
+        "question": q["question"],
+        "done": False
+    })
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
