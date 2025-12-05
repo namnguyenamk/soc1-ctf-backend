@@ -150,37 +150,45 @@ def finish():
 # -------------------------------------------------------
 @app.route("/ranking", methods=["GET"])
 def ranking():
-    es_url = f"{ELASTIC_HOST}/{ELASTIC_INDEX}/_search"
-    query = {
-        "size": 10,
-        "sort": [
-            {"score": {"order": "desc"}},
-            {"finished_time": {"order": "asc"}}
-        ],
-        "query": {
-            "exists": { "field": "score" }
+    try:
+        es_url = f"{ELASTIC_HOST}/{ELASTIC_INDEX}/_search"
+        query = {
+            "size": 10,
+            "sort": [
+                {"score": {"order": "desc"}},
+                {"finished_time.keyword": {"order": "asc"}}
+            ],
+            "query": {
+                "exists": {"field": "score"}
+            }
         }
-    }
 
-    es_headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"ApiKey {ELASTIC_API_KEY}"
-    }
+        es_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"ApiKey {ELASTIC_API_KEY}"
+        }
 
-    res = requests.get(es_url, json=query, headers=es_headers)
-    result = res.json()
+        res = requests.get(es_url, json=query, headers=es_headers)
+        
+        # Nếu Elasticsearch trả lỗi → tránh crash
+        if res.status_code != 200:
+            return jsonify({"error": "Elastic query failed", "detail": res.text}), 500
+        
+        result = res.json()
 
-    ranking_list = []
+        ranking_list = []
+        for hit in result.get("hits", {}).get("hits", []):
+            src = hit["_source"]
+            ranking_list.append({
+                "username": src.get("username"),
+                "score": src.get("score"),
+                "finished_time": src.get("finished_time")
+            })
 
-    for hit in result["hits"]["hits"]:
-        src = hit["_source"]
-        ranking_list.append({
-            "username": src.get("username"),
-            "score": src.get("score"),
-            "finished_time": src.get("finished_time")
-        })
+        return jsonify(ranking_list)
 
-    return jsonify(ranking_list)
+    except Exception as e:
+        return jsonify({"error": "Ranking failed", "detail": str(e)}), 500
 
 # -------------------------------------------------------
 # RUN APP
