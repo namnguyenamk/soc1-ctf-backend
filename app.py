@@ -6,33 +6,33 @@ import os
 # ========= CONFIG CỦA BẠN =========
 ELASTIC_HOST = "https://xdrview.dc.turkuamk.fi:9200"
 ELASTIC_INDEX = "botsv1_ctf_answers"
-ELASTIC_PIPELINE = "ctf_answer_checker"
+ELASTIC_PIPELINE = "ctf_answer_checker"  # nếu bạn tạo ingest pipeline
 ELASTIC_API_KEY = os.environ.get("ELASTIC_API_KEY")
 # ===================================
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Cho phép gọi từ GitHub Pages
 
-# Danh sách câu hỏi và đáp án (tạm thời viết thẳng trong code)
+# Danh sách câu hỏi và đáp án
 questions = {
     1: {
         "question": "Q1: In the bots1_firewall_log index, find the event with action='ALLOW', rule.id=79 and port=19. What is the source.ip?",
         "answer": "209.35.99.117"
     },
     2: {
-        "question": "Q2: .... (bạn sẽ điền câu hỏi thật sau này)",
+        "question": "Q2: ... (real question here)",
         "answer": "ANSWER_Q2"
     },
     3: {
-        "question": "Q3: ....",
+        "question": "Q3: ...",
         "answer": "ANSWER_Q3"
     },
     4: {
-        "question": "Q4: ....",
+        "question": "Q4: ...",
         "answer": "ANSWER_Q4"
     },
     5: {
-        "question": "Q5: ....",
+        "question": "Q5: ...",
         "answer": "ANSWER_Q5"
     }
 }
@@ -41,11 +41,14 @@ questions = {
 def home():
     return "SOC1 CTF Backend Running!"
 
+# -------------------------------------------------------
+# API LẤY CÂU HỎI
+# -------------------------------------------------------
 @app.route("/question/<int:q_id>", methods=["GET"])
 def get_question(q_id):
     q = questions.get(q_id)
     if not q:
-        return jsonify({"done": True})
+        return jsonify({"done": True})  # Không còn câu hỏi → trả done
 
     return jsonify({
         "id": q_id,
@@ -53,14 +56,15 @@ def get_question(q_id):
         "done": False
     })
 
+# -------------------------------------------------------
+# API SUBMIT TRẢ LỜI
+# -------------------------------------------------------
 @app.route("/submit", methods=["POST"])
-def submit():
-    """
-    Nhận JSON: { "question_id": 1, "answer": "..." }
-    """
+def submit_answer():
     data = request.get_json()
     q_id = data.get("question_id")
     user_answer = (data.get("answer") or "").strip()
+    username = data.get("username") or "unknown"
 
     q = questions.get(q_id)
     if not q:
@@ -68,16 +72,37 @@ def submit():
 
     is_correct = (user_answer == q["answer"])
 
+    # Gửi log vào Elasticsearch
+    if ELASTIC_API_KEY:
+        doc = {
+            "username": username,
+            "question": q_id,
+            "submitted_answer": user_answer,
+            "correct_answer": q["answer"],
+            "is_correct": is_correct,
+            "player_ip": request.remote_addr
+        }
+
+        es_url = f"{ELASTIC_HOST}/{ELASTIC_INDEX}/_doc"
+        es_headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"ApiKey {ELASTIC_API_KEY}"
+        }
+
+        try:
+            requests.post(es_url, json=doc, headers=es_headers, timeout=5)
+        except Exception as e:
+            print("Error sending to Elasticsearch:", e)
+
     if is_correct:
         next_q = q_id + 1
-        return jsonify({
-            "correct": True,
-            "next_question": next_q
-        })
-    else:
-        return jsonify({
-            "correct": False
-        })
+        return jsonify({"correct": True, "next_question": next_q})
+
+    return jsonify({"correct": False})
+
+# -------------------------------------------------------
+# API FINISH — LƯU KẾT QUẢ
+# -------------------------------------------------------
 @app.route("/finish", methods=["POST"])
 def finish():
     data = request.get_json()
@@ -95,18 +120,60 @@ def finish():
         "player_ip": request.remote_addr
     }
 
-    # Gửi vào elastic
+    # Send to Elastic
     if ELASTIC_API_KEY:
         es_url = f"{ELASTIC_HOST}/{ELASTIC_INDEX}/_doc"
         es_headers = {
             "Content-Type": "application/json",
             "Authorization": f"ApiKey {ELASTIC_API_KEY}"
         }
+
         try:
             requests.post(es_url, json=doc, headers=es_headers, timeout=5)
         except:
-            print("Error ES")
+            print("Error saving score to ES")
 
     return jsonify({"status": "saved"})
+
+# -------------------------------------------------------
+# API RANKING — TOP 10
+# -------------------------------------------------------
+@app.route("/ranking", methods=["GET"])
+def ranking():
+    es_url = f"{ELASTIC_HOST}/{ELASTIC_INDEX}/_search"
+    query = {
+        "size": 10,
+        "sort": [
+            {"score": {"order": "desc"}},
+            {"finished_time": {"order": "asc"}}
+        ],
+        "query": {
+            "exists": { "field": "score" }
+        }
+    }
+
+    es_headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"ApiKey {ELASTIC_API_KEY}"
+    }
+
+    res = requests.get(es_url, json=query, headers=es_headers)
+    result = res.json()
+
+    ranking_list = []
+
+    for hit in result["hits"]["hits"]:
+        src = hit["_source"]
+        ranking_list.append({
+            "username": src.get("username"),
+            "score": src.get("score"),
+            "finished_time": src.get("finished_time")
+        })
+
+    return jsonify(ranking_list)
+
+# -------------------------------------------------------
+# RUN APP
+# -------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
